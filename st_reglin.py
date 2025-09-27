@@ -71,7 +71,7 @@ if X_file:
         Y=data.iloc[:,1].to_numpy()
 else:
     X_lin=data_input.number_input("Nombre de lignes",min_value=1,value=3,step=1,key="nlinX")
-    X=data_input.data_editor(pd.DataFrame([0]*X_lin),key="data")
+    X=data_input.data_editor(pd.DataFrame([i for i in range(X_lin)]),key="data")
 
 
 Y_file=data_input.checkbox("importer les données depuis un fichier CSV",key="fileY")
@@ -83,7 +83,7 @@ if Y_file:
         X=data.iloc[:,0].to_numpy()
         Y=data.iloc[:,1].to_numpy()
 else:
-    Y=data_input.data_editor(pd.DataFrame([i for i in range(len(X))]),key="dataY")
+    Y=data_input.data_editor(pd.DataFrame([i for i in range(X_lin)]),key="dataY")
 
 X=X.to_numpy()
 Y=Y.to_numpy()
