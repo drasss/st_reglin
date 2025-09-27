@@ -83,7 +83,7 @@ if Y_file:
         X=data.iloc[:,0].to_numpy()
         Y=data.iloc[:,1].to_numpy()
 else:
-    Y=data_input.data_editor(pd.DataFrame([0]*X_lin),key="dataY")
+    Y=data_input.data_editor(pd.DataFrame([i for i in range(len(X))]),key="dataY")
 
 X=X.to_numpy()
 Y=Y.to_numpy()
