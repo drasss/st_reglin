@@ -34,7 +34,7 @@ poly=np.array((f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18
 #vecteur de fonctions a prendre en compte a remplir en fonction des envie
 pre=np.array((math.sin,math.cos,math.tan,math.exp,math.log))
 
-funct=st.multiselect("Choisir les fonctions polynomiales",options=[f"sin(x)",f"cos(x)",f"tan(x)",f"exp(x)",f"log(x)"]+[f"x^{i}" for i in range(21)]+[f"1/x^{i}" for i in range(1,21)],default=["x^0","x^1"],key="poly")
+funct=st.multiselect("Choisir les fonctions polynomiales",options=[f"sin(x)",f"cos(x)",f"tan(x)",f"exp(x)",f"log(x)",f"sqrt(x)"]+[f"x^{i}" for i in range(21)]+[f"1/x^{i}" for i in range(1,21)],default=["x^0","x^1"],key="poly")
 
 f=[]
 for func in funct:
@@ -54,6 +54,8 @@ for func in funct:
       elif func.startswith("1/x^"):
         deg=int(func[5:])
         f.append(lambda x,deg=deg: 1/poly[deg](x))
+      elif func=="sqrt(x)":
+        f.append(np.sqrt)
 
 
 
@@ -71,7 +73,7 @@ if X_file:
         Y=data.iloc[:,1].to_numpy()
 else:
     X_lin=data_input.number_input("Nombre de lignes",min_value=1,value=3,step=1,key="nlinX")
-    X=data_input.data_editor(pd.DataFrame([i for i in range(X_lin)]),key="data")
+    X=data_input.data_editor(pd.DataFrame([float(i) for i in range(X_lin)]),key="data")
 
 
 Y_file=data_input.checkbox("importer les données depuis un fichier CSV",key="fileY")
@@ -83,7 +85,7 @@ if Y_file:
         X=data.iloc[:,0].to_numpy()
         Y=data.iloc[:,1].to_numpy()
 else:
-    Y=data_input.data_editor(pd.DataFrame([i for i in range(X_lin)]),key="dataY")
+    Y=data_input.data_editor(pd.DataFrame([float(i) for i in range(X_lin)]),key="dataY")
 
 X=X.to_numpy()
 Y=Y.to_numpy()
@@ -118,7 +120,7 @@ Sigmac=SCE/(n-p)
 #Analyse gaussienne
 #décision du alpha
 param=st.expander("Paramètres statistiques")
-alpha=param.slider("Choisir le niveau de confiance",min_value=0.80,max_value=0.99,value=0.95,step=0.01,key="alpha")
+alpha=param.slider("Choisir le niveau de confiance",min_value=80.,max_value=99.,value=95.,step=0.1,key="alpha")/100
 
 param.write("".join([str(Beta[i][0])+"\*"+funct[i]+" + " for i in range(len(Beta))]).strip("+ "))
 #----------------------------------------
@@ -128,24 +130,41 @@ param.divider()
 if np.linalg.det(Jt@J)!=0:
     gam=np.linalg.inv(Jt@J)
     for i in range(p):
-        ICi=np.round(Beta[i]-math.sqrt(Sigmac*gam[i,i])*scipy.stats.t.ppf(q=1-alpha,df=n-p),6)
-        ICs=np.round(Beta[i]+math.sqrt(Sigmac*gam[i,i])*scipy.stats.t.ppf(q=1-alpha,df=n-p),6)
+        ICi=np.round(Beta[i]+math.sqrt(Sigmac*gam[i,i])*scipy.stats.t.ppf(q=1-alpha/2,df=n-p),6)
+        ICs=np.round(Beta[i]-math.sqrt(Sigmac*gam[i,i])*scipy.stats.t.ppf(q=1-alpha/2,df=n-p),6)
         param.write("l'intervalle de confiance pour la "+str(i)+" eme composante")
-        param.write("["+str(ICi[0])+" ; "+str(ICs[0])+"]")
+        param.write("["+str(min(ICi[0],ICs[0]))+" ; "+str(max(ICi[0],ICs[0]))+"]")
         param.write("la "+str(i)+" eme composante est-elle nulle ? : "+str(ouinon[int(ICs[0]*ICi[0]>0)])+"\n\n")
         param.divider()
     Model=np.sum(Beta)/np.ones(np.shape(Beta)).transpose()@gam@np.ones(np.shape(Beta))*np.sum(Beta)/Sigmac
     param.write("le modèle est inutile ? : "+str(ouinon[int(Model>scipy.stats.f.ppf(q=1-alpha,dfn=1,dfd=n-p))])+"\n\n") 
     
+# ------------------------------- intervalle de confiance
 
+show_ic=st.toggle("Montrer l'intervalle de confiance ")
+
+#--------------------------------------
+    
 #affichage graphique
-ecart=np.arange(min(X),max(X),0.5)
+ecart=np.arange(min(X)-1,max(X)+1,(max(X)-min(X))/(5*len(X)))
 V=np.zeros((len(ecart),len(f)))
 for i in range(len(ecart)):
       for j in range(len(f)):
             V[i,j]=f[j](ecart[i])
 aff=np.array(V)@Beta
 fig,ax=plt.subplots()
-ax.plot(X,Y,".")
+print(V)
+if show_ic:
+      ICm=[]
+      ICp=[]
+      for i in range(len(ecart)):
+            ICm+=[aff[i]-scipy.stats.t.ppf(q=1-alpha,df=n-p)*np.sqrt(Sigmac*V[i]@gam@V[i].T)]
+            ICp+=[aff[i]+scipy.stats.t.ppf(q=1-alpha,df=n-p)*np.sqrt(Sigmac*V[i]@gam@V[i].T)]
+
+      ax.plot(ecart,ICm)
+      ax.plot(ecart,ICp)
+
+
+ax.plot(X,Y,"2")
 ax.plot(ecart,aff)
 st.pyplot(fig,width=700)
