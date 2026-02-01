@@ -85,7 +85,7 @@ if Y_file:
         X=data.iloc[:,0].to_numpy()
         Y=data.iloc[:,1].to_numpy()
 else:
-    Y=data_input.data_editor(pd.DataFrame([float(i) for i in range(X_lin)]),key="dataY")
+    Y=data_input.data_editor(pd.DataFrame([float(i+1) for i in range(X_lin)]),key="dataY")
 
 X=X.to_numpy()
 Y=Y.to_numpy()
@@ -95,9 +95,10 @@ Y=np.sort(Y)
 
 #regression linéaire multiple
 J=np.zeros((len(X),len(f)))
+
 for i in range(len(X)):
       for j in range(len(f)):
-            J[i,j]=f[j](X[i])
+            J[i,j]=f[j](X[i])[0]
 Jt=np.transpose(J)
 
 #Beta=np.linalg.inv(Jt@J)@(Jt@Y) marche pas pour des problèmes de conditionnement
@@ -137,7 +138,7 @@ if np.linalg.det(Jt@J)!=0:
         param.write("la "+str(i)+" eme composante est-elle nulle ? : "+str(ouinon[int(ICs[0]*ICi[0]>0)])+"\n\n")
         param.divider()
     Model=np.sum(Beta)/np.ones(np.shape(Beta)).transpose()@gam@np.ones(np.shape(Beta))*np.sum(Beta)/Sigmac
-    param.write("le modèle est inutile ? : "+str(ouinon[int(Model>scipy.stats.f.ppf(q=1-alpha,dfn=1,dfd=n-p))])+"\n\n") 
+    param.write("le modèle est inutile ? : "+str(ouinon[int(Model[0][0]>scipy.stats.f.ppf(q=1-alpha,dfn=1,dfd=n-p))])+"\n\n") 
     
 # ------------------------------- intervalle de confiance
 
@@ -146,7 +147,9 @@ show_ic=st.toggle("Montrer l'intervalle de confiance ")
 #--------------------------------------
     
 #affichage graphique
-ecart=np.arange(min(X)-1,max(X)+1,(max(X)-min(X))/(5*len(X)))
+minn=min(X)[0]
+maxx=max(X)[0]
+ecart=np.arange(minn-1,maxx+1,(maxx-minn)/(5*len(X)))
 V=np.zeros((len(ecart),len(f)))
 for i in range(len(ecart)):
       for j in range(len(f)):
